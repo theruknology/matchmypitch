@@ -1,116 +1,150 @@
-# Matchmaking Backend Cognitive Engine
+# MatchMyPitch
 
-AI-powered matchmaking platform connecting startups and investors using voice call transcripts.
+**The "Tinder for Founders and Funders" — built on Agentic AI.**
 
-## Overview
+MatchMyPitch replaces static application forms with an interactive, dynamic matchmaking engine. Startups pitch their ideas live to an AI voice agent, while investors submit their core thesis and financial constraints. Our backend "Slow Brain" then cross-references the live pitch transcript with uploaded pitch decks, validates the claims, and generates tailored matchmaking reports for compatible investors.
 
-This backend processes call transcripts from ElevenLabs to create intelligent matches between startups and investors. The system uses three specialized AI agents orchestrated through the strands-agents framework, with data stored in ClickHouse for hybrid vector similarity and SQL-based filtering.
+---
 
-## Architecture
+## 🧠 System Architecture
 
-- **API Layer**: FastAPI webhook endpoint for transcript ingestion
-- **Agent Layer**: Three specialized agents (Due Diligence, Thesis, Matchmaker)
-- **Storage Layer**: ClickHouse for profiles/vectors, S3 via MCP for documents
-- **Orchestration**: strands-agents framework for agent coordination
+MatchMyPitch splits the cognitive load into two distinct engines to solve the latency problem: 
+* **The "Fast Brain" (Edge AI):** Powered by ElevenLabs WebRTC for ultra-low latency (<500ms) live voice interviews.
+* **The "Slow Brain" (Cognitive Engine):** Powered by AWS Bedrock Agents (or Strands SDK) to handle complex document parsing, state management, and database embeddings without blocking the user interface.
 
-## Setup
+```mermaid
+graph TD
+    subgraph "The Fast Brain (Edge AI)"
+        F[Founder] <-->|WebRTC Voice| IA[Intake Agent<br>ElevenLabs]
+    end
+    
+    subgraph "The Slow Brain (AWS Bedrock Agents)"
+        IA -->|Webhook: Final Transcript| DD[Due Diligence Agent]
+        S3[Amazon S3: Pitch Decks] -->|Bedrock Knowledge Base| DD
+        
+        I[Investor] -->|Text Form: Thesis & Portfolio| TA[Thesis Agent]
+        
+        DD -->|Extracts Financials & Embeddings| CH[(ClickHouse Cloud<br>Vector + OLAP)]
+        TA -->|Extracts Constraints & Embeddings| CH
+        
+        CH <-->|Action Group: SQL / Vector Query| MA[Matchmaker Agent]
+        DD -->|Triggers Match Event| MA
+        MA -->|Tailored Pitch Report| I
+    end
 
-### Prerequisites
+```
 
-- Python 3.10+
-- ClickHouse database
-- Virtual environment (recommended)
+---
 
-### Installation
+## 🛡️ The Agentic Engine: "Correction over Regeneration"
 
-1. Clone the repository
-2. Create and activate virtual environment:
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   ```
+Traditional LLM workflows often hallucinate when parsing complex financial data. MatchMyPitch relies on a rigorous **Planner-Executor-Critic** model with a built-in self-healing loop.
 
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-   
-   Or with Poetry:
-   ```bash
-   poetry install
-   ```
+Instead of generating a final match immediately, the **Critic/DD Agent** cross-references the metrics extracted from the S3 pitch deck against the verbal claims made during the ElevenLabs live interview. If there is a discrepancy (e.g., the deck claims $50k MRR, but the transcript says $30k), the graph routes back for refinement before saving to the database.
 
-4. Configure environment variables:
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
+```mermaid
+graph TD
+    %% Nodes
+    START((START))
+    Extract[Node: Data Extractor Agent]
+    Critic[Node: Critic / DD Agent]
+    Match[Node: Matchmaker Agent]
+    END((END))
 
-5. Initialize ClickHouse database:
-   ```bash
-   python scripts/init_db.py
-   ```
+    %% Edges
+    START --> Extract
+    Extract -->|Raw Extracted Metrics| Critic
+    
+    %% Self-Healing Loop
+    Critic -->|Condition: Valid?| Route{Is Data Accurate?}
+    Route -->|No: Hallucination/Missing Data| Extract
+    
+    %% Success Path
+    Route -->|Yes: Approved| Match
+    Match --> END
 
-### Running the Application
+    %% Styling
+    classDef selfheal stroke:#ff0000,stroke-width:2px;
+    class Route,Critic selfheal;
+
+```
+
+---
+
+## 🛠️ Tech Stack
+
+* **Frontend:** Next.js (TypeScript), Tailwind CSS.
+* **Voice SDK:** `@elevenlabs/react` (Real-time WebRTC Conversational AI).
+* **AI Orchestration:** AWS Bedrock Agents / `strands-agents` Python SDK.
+* **Database:** ClickHouse Cloud (Handles both structured OLAP querying and `Float32` HNSW Vector Search).
+* **Storage:** Amazon S3 (Pitch decks and portfolios) mapped to Bedrock Knowledge Bases.
+* **API:** FastAPI (Webhook ingestion).
+
+---
+
+## ⚡ Quick Start
+
+### 1. Prerequisites
+
+* Node.js v18+
+* Python 3.11+
+* ClickHouse Cloud Account
+* ElevenLabs API Key
+
+### 2. Environment Setup
+
+Clone the repository and install dependencies for both the frontend and backend:
 
 ```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+git clone [https://github.com/yourusername/MatchMyPitch.git](https://github.com/yourusername/MatchMyPitch.git)
+cd MatchMyPitch
+
+# Install Frontend
+cd web
+npm install
+
+# Install Backend
+cd ../api
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
 ```
 
-The API will be available at `http://localhost:8000`
+### 3. Database Initialization
 
-## API Endpoints
+Ensure your ClickHouse table is configured to handle the hybrid vector matching:
 
-- `GET /` - Health check
-- `GET /health` - Detailed health status
-- `POST /webhook/elevenlabs` - Receive call transcripts (coming soon)
+```sql
+CREATE TABLE platform_matchmaking (
+    id String,
+    user_type Enum8('startup' = 1, 'investor' = 2),
+    max_valuation UInt64,
+    semantic_thesis_vector Array(Float32),
+    INDEX vector_index semantic_thesis_vector TYPE vector_similarity('hnsw', 'cosineDistance', 384)
+) ENGINE = MergeTree ORDER BY id;
 
-## Development
+```
 
-### Running Tests
+### 4. Run the Platform
+
+Start both servers locally:
 
 ```bash
-# Run all tests
-pytest
+# Terminal 1 (Backend Webhook Receiver)
+fastapi dev main.py
 
-# Run with coverage
-pytest --cov=app
-
-# Run only property-based tests
-pytest -m property_test
-```
-
-### Code Formatting
-
-```bash
-# Format code
-black app/
-
-# Lint code
-ruff check app/
-```
-
-## Project Structure
+# Terminal 2 (Next.js App)
+npm run dev
 
 ```
-matchmaking-backend/
-├── app/
-│   ├── __init__.py
-│   ├── main.py              # FastAPI application
-│   ├── config.py            # Configuration settings
-│   ├── models.py            # Pydantic data models
-│   ├── database.py          # ClickHouse client
-│   ├── logging_config.py    # Structured logging
-│   ├── agents/              # AI agents (coming soon)
-│   └── routes/              # API routes (coming soon)
-├── tests/                   # Test suite (coming soon)
-├── scripts/                 # Utility scripts (coming soon)
-├── .env.example             # Example environment variables
-├── requirements.txt         # Python dependencies
-├── pyproject.toml          # Poetry configuration
-└── README.md               # This file
-```
 
-## License
+---
 
-Proprietary
+## 🤝 Contributing
+
+MatchMyPitch is built using **Spec-Driven Development** via Kiro IDE to maintain strict agentic logic. Please ensure all modifications to the Python `agents/` directory include the proper `@tool` decorators for database operations. See `CONTRIBUTING.md` for more details.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](https://www.google.com/search?q=LICENSE) file for details.
