@@ -1,0 +1,189 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@layer base {
+  :root {
+    --background: 240 12% 4%;
+    --foreground: 240 10% 93%;
+    --card: 240 12% 6%;
+    --card-foreground: 240 10% 93%;
+    --popover: 240 12% 6%;
+    --popover-foreground: 240 10% 93%;
+    --primary: 263 70% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 10% 10%;
+    --secondary-foreground: 240 10% 80%;
+    --muted: 240 10% 12%;
+    --muted-foreground: 240 8% 50%;
+    --accent: 280 60% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 65% 52%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 10% 13%;
+    --input: 240 10% 13%;
+    --ring: 263 70% 58%;
+    --chart-1: 263 70% 58%;
+    --chart-2: 280 60% 50%;
+    --chart-3: 245 55% 55%;
+    --chart-4: 300 50% 50%;
+    --chart-5: 230 50% 55%;
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* ── Glassmorphism ──────────────────────────────── */
+.glass {
+  background: linear-gradient(
+    135deg,
+    hsla(240, 12%, 8%, 0.7),
+    hsla(260, 15%, 6%, 0.65)
+  );
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid hsla(263, 50%, 40%, 0.12);
+}
+
+.glass-strong {
+  background: linear-gradient(
+    135deg,
+    hsla(240, 12%, 7%, 0.88),
+    hsla(260, 15%, 5%, 0.85)
+  );
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  border: 1px solid hsla(263, 50%, 40%, 0.15);
+}
+
+/* ── Glow utilities ─────────────────────────────── */
+.purple-glow {
+  box-shadow:
+    0 0 20px hsla(263, 70%, 58%, 0.2),
+    0 0 40px hsla(280, 60%, 50%, 0.08);
+}
+
+.purple-glow-strong {
+  box-shadow:
+    0 0 24px hsla(263, 70%, 58%, 0.3),
+    0 0 48px hsla(280, 60%, 50%, 0.12),
+    0 0 80px hsla(263, 70%, 58%, 0.05);
+}
+
+.purple-text-glow {
+  text-shadow:
+    0 0 12px hsla(263, 70%, 58%, 0.4),
+    0 0 24px hsla(280, 60%, 50%, 0.2);
+}
+
+.purple-border {
+  border-color: hsla(263, 60%, 50%, 0.25);
+  box-shadow:
+    inset 0 1px 0 hsla(263, 70%, 70%, 0.06),
+    0 0 20px hsla(263, 70%, 58%, 0.08);
+}
+
+/* ── Gradient backgrounds ──────────────────────── */
+.gradient-primary {
+  background: linear-gradient(135deg, hsl(263, 70%, 58%), hsl(280, 60%, 50%));
+}
+
+.gradient-primary-subtle {
+  background: linear-gradient(135deg, hsla(263, 70%, 58%, 0.12), hsla(280, 60%, 50%, 0.08));
+}
+
+.gradient-primary-hover {
+  background: linear-gradient(135deg, hsl(263, 70%, 62%), hsl(280, 60%, 54%));
+}
+
+.gradient-accent {
+  background: linear-gradient(135deg, hsl(280, 60%, 50%), hsl(310, 50%, 48%));
+}
+
+.gradient-accent-subtle {
+  background: linear-gradient(135deg, hsla(280, 60%, 50%, 0.12), hsla(310, 50%, 48%, 0.08));
+}
+
+/* ── Page ambient overlay ──────────────────────── */
+.ambient-glow {
+  position: relative;
+}
+.ambient-glow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 0%, hsla(263, 70%, 50%, 0.06), transparent),
+    radial-gradient(ellipse 50% 40% at 80% 20%, hsla(280, 60%, 45%, 0.04), transparent),
+    radial-gradient(ellipse 40% 30% at 10% 60%, hsla(263, 70%, 50%, 0.03), transparent);
+  z-index: 0;
+}
+
+/* ── Grid background (very subtle purple) ──────── */
+.grid-bg {
+  background-image:
+    linear-gradient(hsla(263, 50%, 40%, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, hsla(263, 50%, 40%, 0.025) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+/* ── Animated gradient ─────────────────────────── */
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 8s ease infinite;
+}
+
+/* ── Pulse glow ────────────────────────────────── */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 16px hsla(263, 70%, 58%, 0.2); }
+  50% { box-shadow: 0 0 32px hsla(263, 70%, 58%, 0.35), 0 0 64px hsla(280, 60%, 50%, 0.12); }
+}
+.animate-pulse-glow {
+  animation: pulse-glow 2.5s ease-in-out infinite;
+}
+
+/* ── Waveform ──────────────────────────────────── */
+@keyframes waveform {
+  0%, 100% { height: 8px; }
+  50% { height: 32px; }
+}
+
+/* ── Float ─────────────────────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* ── Fill bar ──────────────────────────────────── */
+@keyframes fill-bar { from { width: 0; } }
+
+/* ── Blink caret ───────────────────────────────── */
+@keyframes blink-caret {
+  0%, 100% { border-color: transparent; }
+  50% { border-color: hsl(var(--primary)); }
+}
+
+/* ── Smooth scrolling ──────────────────────────── */
+html { scroll-behavior: smooth; }
